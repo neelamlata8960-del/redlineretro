@@ -4,44 +4,585 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Red Lines Retro</title>
-    <link rel="icon" href="logo.png">
+    <link rel="icon" href="./logo.png" type="image/png">
     <style>
-        body { background-color: #0d0d0d; color: #fff; text-align: center; margin: 0; font-family: sans-serif; }
-        h1 { color: #888; letter-spacing: 5px; border-bottom: 3px solid #d32f2f; display: inline-block; padding-bottom: 10px; margin-top: 20px; text-transform: uppercase; }
-        .cabinet-frame { width: 80%; max-width: 800px; height: 450px; margin: 40px auto; border: 15px solid #222; background: #000; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        #game-container { width: 100%; height: 100%; }
-        #banner { width: 100%; height: 100%; object-fit: cover; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 10; }
+        body {
+            background-color: #0d0d0d;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+
+        .header-wrapper {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #7a8288;
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin: 0;
+            padding-bottom: 8px;
+            border-bottom: 4px solid #cc0000;
+            text-align: center;
+        }
+
+        .cabinet-frame {
+            width: 85vw;
+            max-width: 1280px;
+            aspect-ratio: 16 / 9;
+            background-color: #000000;
+            border: 12px solid #222222;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.95);
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: none;
+            background: #000000;
+            outline: none;
+        }
+
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #splash-screen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
         @media (max-width: 768px) {
-            h1 { font-size: 20px; letter-spacing: 2px; }
-            .cabinet-frame { width: 95%; height: 250px; margin: 20px auto; border-width: 5px; }
+            body {
+                justify-content: flex-start;
+                padding-top: 4vh;
+            }
+
+            .header-wrapper {
+                margin-bottom: 12px;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+                letter-spacing: 2px;
+                white-space: nowrap;
+                padding-bottom: 4px;
+                border-bottom: 2px solid #cc0000;
+            }
+
+            .cabinet-frame {
+                width: 95vw;
+                border-width: 4px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Red Lines Retro</h1>
+
+    <div class="header-wrapper">
+        <h1>Red Lines Retro</h1>
+    </div>
+
     <div class="cabinet-frame">
-        <img id="banner" src="banner.png" alt="Click to Start">
-        <div id="game-container"></div>
+        <div id="splash-screen">
+            <img id="banner-img" src="./banner.png" alt="Click to Start">
+        </div>
+        <canvas id="canvas" tabindex="0" aria-label="Game canvas; click to activate keyboard and controller"></canvas>
     </div>
 
     <script>
-        document.getElementById('banner').addEventListener('click', function() {
-            this.style.display = 'none';
-            
-            window.EJS_player = '#game-container';
-            window.EJS_core = 'psp';
-            window.EJS_gameName = 'Burnout';
-            window.EJS_color = '#d32f2f';
-            window.EJS_startOnLoaded = true;
-            
-            // Fixed: Pointing exclusively to the compiled 'stable' release
-            window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-            window.EJS_gameUrl = 'PASTE_YOUR_ARCHIVE_ORG_LINK_HERE';
+        const params = new URLSearchParams(location.search);
+        const canvas = document.getElementById('canvas');
+        const splashScreen = document.getElementById('splash-screen');
+        const bannerImg = document.getElementById('banner-img');
+        const CARD_DIR = '/memcard';
+        const CARD_FILE = '/memcard/Mcd001.ps2';
+        const ONLINE_DIR = '/online-card';
+        const BURNOUT_ISO_URL = 'https://archive.org/download/burnout-dominator-asia/Burnout%20Dominator%20%28Asia%29.iso';
 
-            var script = document.createElement('script');
-            script.src = 'https://cdn.emulatorjs.org/stable/data/emulator.min.js';
-            document.body.appendChild(script);
+        function missingFeatures() {
+            const header = [0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 3, 2, 1, 0, 10];
+            const accepts = (body) => {
+                try {
+                    return WebAssembly.validate(new Uint8Array(header.concat([body.length + 2, 1, body.length], body)));
+                } catch (e) {
+                    return false;
+                }
+            };
+            const missing = [];
+            if (!window.crossOriginIsolated) missing.push('cross-origin isolation (COOP/COEP)');
+            if (!accepts([0, 0x1F, 0x40, 0, 0x0B, 0x0B]) && !accepts([0, 0x06, 0x40, 0x0B, 0x0B])) missing.push('WebAssembly exceptions');
+            if (!accepts([0, 0xFD, 0x0C].concat(new Array(16).fill(0), [0x1A, 0x0B]))) missing.push('WebAssembly SIMD');
+            return missing;
+        }
+
+        let cardTimer = 0;
+        function storeCard() {
+            if (Module.online) return;
+            clearTimeout(cardTimer);
+            cardTimer = setTimeout(() => {
+                try {
+                    FS.syncfs(false, (err) => {
+                        if (err) console.warn('memory card: could not write browser storage', err);
+                    });
+                } catch (e) {}
+            }, 300);
+        }
+
+        function fitCanvas() {
+            const mobile = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints || 0) > 0;
+            const ratio = Math.min(window.devicePixelRatio || 1, mobile ? 1 : 2);
+            const width = Math.max(1, Math.round(canvas.clientWidth * ratio));
+            const height = Math.max(1, Math.round(canvas.clientHeight * ratio));
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width;
+                canvas.height = height;
+                if (Module.running && Module._ps2web_resize) Module._ps2web_resize(width, height);
+            }
+        }
+        window.addEventListener('resize', fitCanvas);
+
+        const workletSource = `
+class Output extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    const { buffer, base } = options.processorOptions;
+    this.ring = new Uint32Array(buffer, base, 4);
+    this.capacity = this.ring[2];
+    this.samples = new Int16Array(buffer, base + 16, this.capacity * 2);
+    this.left = 0; this.right = 0;
+  }
+  process(inputs, outputs) {
+    const left = outputs[0][0], right = outputs[0][1];
+    const write = Atomics.load(this.ring, 0), mask = this.capacity - 1;
+    let read = Atomics.load(this.ring, 1);
+    for (let i = 0; i < left.length; ++i) {
+      if (read !== write) {
+        const at = (read & mask) * 2;
+        this.left = this.samples[at] / 32768; this.right = this.samples[at + 1] / 32768;
+        read = (read + 1) >>> 0;
+      } else { this.left *= 0.995; this.right *= 0.995; }
+      left[i] = this.left; right[i] = this.right;
+    }
+    Atomics.store(this.ring, 1, read);
+    Atomics.store(this.ring, 3, 1);
+    return true;
+  }
+}
+registerProcessor('ps2-output', Output);`;
+
+        let audio = null;
+        let gain = null;
+        async function startAudio() {
+            audio = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+            await audio.audioWorklet.addModule(URL.createObjectURL(new Blob([workletSource], { type: 'application/javascript' })));
+            const node = new AudioWorkletNode(audio, 'ps2-output', {
+                outputChannelCount: [2],
+                processorOptions: { buffer: Module.HEAPU8.buffer, base: Module._ps2web_audio_ring() }
+            });
+            gain = audio.createGain();
+            gain.gain.value = Module.volume;
+            node.connect(gain).connect(audio.destination);
+        }
+
+        async function startAudioForGame() {
+            let timer;
+            const setup = startAudio().then(() => true, (error) => {
+                Module.printErr(`[web] audio initialization failed: ${error}`);
+                return false;
+            });
+            const ready = await Promise.race([
+                setup,
+                new Promise((resolve) => { timer = setTimeout(() => resolve(null), 2500); })
+            ]);
+            clearTimeout(timer);
+            if (ready === null) Module.printErr('[web] audio initialization is taking too long; starting the game while it finishes');
+        }
+
+        function unlockAudio() {
+            if (audio && audio.state !== 'running') audio.resume().catch(() => {});
+        }
+        window.audioUnlock = unlockAudio;
+        for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, unlockAudio);
+
+        async function canPresent(power) {
+            const adapter = await navigator.gpu.requestAdapter({ powerPreference: power });
+            if (!adapter) return null;
+            const device = await adapter.requestDevice();
+            let failed = false;
+            device.lost.then((info) => { if (info.reason !== 'destroyed') failed = true; });
+            device.onuncapturederror = () => { failed = true; };
+            const probe = document.createElement('canvas');
+            probe.width = probe.height = 64;
+            probe.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none';
+            document.body.appendChild(probe);
+            try {
+                const context = probe.getContext('webgpu');
+                context.configure({ device, format: navigator.gpu.getPreferredCanvasFormat(), alphaMode: 'opaque' });
+                for (let i = 0; i < 3 && !failed; ++i) {
+                    const encoder = device.createCommandEncoder();
+                    encoder.beginRenderPass({
+                        colorAttachments: [{
+                            view: context.getCurrentTexture().createView(),
+                            loadOp: 'clear',
+                            storeOp: 'store',
+                            clearValue: [0, 0, 0, 1]
+                        }]
+                    }).end();
+                    device.queue.submit([encoder.finish()]);
+                    await new Promise((resolve) => { requestAnimationFrame(resolve); setTimeout(resolve, 100); });
+                    await device.queue.onSubmittedWorkDone();
+                }
+            } catch (e) {
+                failed = true;
+            }
+            probe.remove();
+            const name = [adapter.info.vendor, adapter.info.architecture].filter(Boolean).join(' ') || power;
+            device.destroy();
+            return failed ? null : name;
+        }
+
+        async function chooseGpu() {
+            if (!navigator.gpu) {
+                Module.gpuWarning = 'WebGPU is not available in this browser. Use updated Chrome or Edge.';
+                return 'no WebGPU';
+            }
+            const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+            if (!adapter) {
+                Module.gpuWarning = 'WebGPU could not find a graphics adapter.';
+                return 'no WebGPU adapter';
+            }
+            if (adapter.info.isFallbackAdapter || adapter.info.architecture === 'swiftshader') {
+                Module.gpuWarning = 'WebGPU is running without hardware acceleration.';
+            }
+            if (navigator.userAgent.includes('Firefox/')) {
+                Module.presentCopy = true;
+                Module.gpuWarning = 'Firefox uses frame copy mode. Use Chrome or Edge for full performance.';
+                return 'Firefox (image copy)';
+            }
+            const name = await canPresent('high-performance');
+            if (name) return name;
+            const low = await canPresent('low-power');
+            if (low) {
+                Module.ENV.PS2_GPU_LOW_POWER = '1';
+                return low;
+            }
+            Module.presentCopy = true;
+            return 'image copy';
+        }
+
+        let frames = 0;
+        let last = performance.now();
+        let previousPerf = null;
+        function readPerf(now) {
+            const sample = {
+                at: now,
+                frame: Module._ps2web_frames(),
+                gpuMs: Module._ps2web_gpu_ms(),
+                emulationIdleMs: Module._ps2web_idle_ms(0),
+                renderIdleMs: Module._ps2web_idle_ms(1),
+                vuIdleMs: Module._ps2web_idle_ms(2),
+                primitives: Module._ps2web_primitives(),
+                vuInterpreted: Module._ps2web_vu_interpreted(),
+                networkWaitMs: Module._ps2web_network_wait_ms?.() ?? 0,
+                discWaitMs: Module._ps2web_disc_wait_ms?.() ?? 0,
+                eeInterpreterMs: Module._ps2web_ee_interpreter_ms?.() ?? 0,
+                eeInterpreterCalls: Module._ps2web_ee_interpreter_calls?.() ?? 0,
+                eeExecutionMs: Module._ps2web_ee_execution_ms?.() ?? 0
+            };
+            const previous = previousPerf;
+            previousPerf = sample;
+            if (!previous) return null;
+            const elapsedMs = Math.max(1, now - previous.at);
+            const delta = (key) => Math.max(0, sample[key] - previous[key]);
+            return {
+                elapsedMs,
+                emulationFps: delta('frame') * 1000 / elapsedMs,
+                emulationIdleMs: delta('emulationIdleMs'),
+                emulationIdlePct: 100 * delta('emulationIdleMs') / elapsedMs,
+                renderIdleMs: delta('renderIdleMs'),
+                renderIdlePct: 100 * delta('renderIdleMs') / elapsedMs,
+                gpuBusyMs: delta('gpuMs'),
+                gpuBusyPct: 100 * delta('gpuMs') / elapsedMs,
+                primitivesPerSecond: delta('primitives') * 1000 / elapsedMs,
+                vuIdleMs: delta('vuIdleMs'),
+                vuInterpretedPerSecond: delta('vuInterpreted') * 1000 / elapsedMs,
+                networkWaitMs: delta('networkWaitMs'),
+                networkWaitPct: 100 * delta('networkWaitMs') / elapsedMs,
+                discWaitMs: delta('discWaitMs'),
+                discWaitPct: 100 * delta('discWaitMs') / elapsedMs,
+                eeInterpreterMs: delta('eeInterpreterMs'),
+                eeInterpreterPct: 100 * delta('eeInterpreterMs') / elapsedMs,
+                eeInterpreterCalls: delta('eeInterpreterCalls'),
+                eeExecutionMs: delta('eeExecutionMs'),
+                eeExecutionPct: 100 * delta('eeExecutionMs') / elapsedMs
+            };
+        }
+
+        var Module = {
+            canvas: canvas,
+            revision: '13c8d0c32d3db18b',
+            locateFile: (path, prefix) => prefix + path + (/\.(wasm|data)$/.test(path) ? '?v=13c8d0c32d3db18b' : ''),
+            arguments: [],
+            discUrl: params.get('disc') || BURNOUT_ISO_URL,
+            discChunkUrl: null,
+            discSize: Number(params.get('size')) || 0,
+            volume: 0.7,
+            missing: missingFeatures(),
+            webStats: null,
+            print: (text) => { console.log(text); },
+            printErr: (text) => {
+                text = String(text);
+                console.log(text);
+                Module.log.push(text);
+                if (Module.log.length > 400) Module.log.shift();
+                const halted = /^\[ee\] (halted|stopped at [^:]+): (.+)$/.exec(text);
+                if (halted && !Module.haltReason) {
+                    Module.haltReason = halted[2];
+                    Module.onHalt?.(halted[2]);
+                }
+            },
+            log: [],
+            autoSkipStartSent: false,
+            async prepareGameData() {
+                return;
+            },
+            noInitialRun: true,
+            ps2CardSaved: () => storeCard(),
+            setVolume(value) {
+                Module.volume = value;
+                if (gain) gain.gain.value = value;
+            },
+            onRuntimeInitialized: () => {
+                Module.initialized = true;
+                Module.onInitialized?.();
+            },
+            preRun: [() => {
+                try {
+                    FS.mkdir(CARD_DIR);
+                    FS.mount(IDBFS, {}, CARD_DIR);
+                    Module.addRunDependency('card');
+                    FS.syncfs(true, (err) => {
+                        if (err) console.warn('memory card: could not read browser storage', err);
+                        Module.removeRunDependency('card');
+                    });
+                } catch (e) {
+                    console.warn('memory card: browser storage is not available', e);
+                }
+                try { FS.mkdir(ONLINE_DIR); } catch (e) {}
+                if (params.get('deint') !== '1') Module.ENV.PS2_NO_DEINTERLACE = '1';
+                Module.ENV.PS2_SCALE = ['1', '2', '3'].includes(params.get('scale')) ? params.get('scale') : '1';
+                let gpuProfile = params.get('gpuprofile');
+                try { gpuProfile ??= new URLSearchParams(parent.location.search).get('gpuprofile'); } catch (e) {}
+                if (gpuProfile !== null) {
+                    Module.ENV.PS2_GPU_PROFILE_LOG = /^\d+,\d+$/.test(gpuProfile) ? gpuProfile : '150,1500';
+                    Module.ENV.PS2_DISC_PROFILE = '1';
+                    Module.ENV.PS2_EE_PROFILE = '1';
+                    Module.ENV.PS2_GPU_PROFILE_INIT = '1';
+                }
+                let discLookahead = params.get('PS2_DISC_LOOKAHEAD');
+                try { discLookahead ??= new URLSearchParams(parent.location.search).get('PS2_DISC_LOOKAHEAD'); } catch (e) {}
+                if (discLookahead !== null && /^\d+$/.test(discLookahead)) Module.ENV.PS2_DISC_LOOKAHEAD = discLookahead;
+                Module.addRunDependency('gpu');
+                chooseGpu().catch((e) => 'error: ' + e).then((gpu) => {
+                    Module.gpuInfo = gpu;
+                    Module.removeRunDependency('gpu');
+                });
+            }],
+            onFrame: () => {
+                ++frames;
+                if (!Module.ready) {
+                    Module.ready = true;
+                    Module.onReady?.();
+                }
+                if (Module.running && !Module.online && !Module.introSkipDone) {
+                    const frame = Module._ps2web_frames();
+                    if (frame > 4200 || Module.playerTouched) {
+                        Module.introSkipDone = true;
+                    } else if (frame >= 500 && frame - (Module.lastIntroTap || 0) >= 150) {
+                        Module.lastIntroTap = frame;
+                        let code = 'Enter';
+                        try { code = JSON.parse(localStorage.getItem('wwe-pain-keyboard-bindings-v1') || '{}').start || code; } catch (e) {}
+                        const key = code.startsWith('Key') ? code.slice(3).toLowerCase() : code.startsWith('Digit') ? code.slice(5) : code;
+                        const event = (type) => new KeyboardEvent(type, { bubbles: true, cancelable: true, code, key, isTrusted: false });
+                        Module.syntheticTap = true;
+                        canvas.dispatchEvent(event('keydown'));
+                        setTimeout(() => {
+                            canvas.dispatchEvent(event('keyup'));
+                            Module.syntheticTap = false;
+                        }, 180);
+                    }
+                }
+                const now = performance.now();
+                if (now - last >= 1000) {
+                    const intervalMs = now - last;
+                    Module.webStats = {
+                        fps: frames * 1000 / intervalMs,
+                        frame: Module._ps2web_frames(),
+                        audioMs: Module._ps2web_audio_queued_ms(),
+                        engine: readPerf(now)
+                    };
+                    frames = 0;
+                    last = now;
+                }
+            },
+            async startGame({ online = false } = {}) {
+                if (Module.running) return;
+                if (Module.missing.length) {
+                    throw new Error('This browser cannot run the game: missing ' + Module.missing.join(', ') + '. Use updated Chrome or Edge.');
+                }
+                Module.online = online;
+                Module.memcardPath = online ? ONLINE_DIR + '/Mcd001.ps2' : CARD_FILE;
+                if (!Module.discSize) {
+                    try {
+                        const head = await fetch(Module.discUrl, { method: 'HEAD' });
+                        Module.discSize = Number(head.headers.get('content-length')) || 0;
+                    } catch (e) {
+                        console.warn('[web] HEAD request for disc size failed, proceeding with direct stream:', e);
+                    }
+                }
+                fitCanvas();
+                Module.printErr('[web] startGame entered; preparing audio');
+                await startAudioForGame();
+                try { Module.bootCard = FS.readFile(Module.memcardPath); } catch (e) { Module.bootCard = null; }
+                Module.running = true;
+                previousPerf = null;
+                Module.printErr('[web] starting PS2 runtime');
+                Module.callMain(Module.arguments);
+                canvas.focus();
+            },
+            flushCard() {
+                return new Promise((resolve) => {
+                    if (Module.online) {
+                        resolve();
+                        return;
+                    }
+                    try {
+                        FS.syncfs(false, () => resolve());
+                    } catch (e) {
+                        resolve();
+                    }
+                });
+            }
+        };
+
+        for (const type of ['keydown', 'pointerdown']) {
+            window.addEventListener(type, (e) => {
+                if (e.isTrusted) Module.playerTouched = true;
+            }, true);
+        }
+        setInterval(() => {
+            try {
+                for (const pad of navigator.getGamepads?.() || []) {
+                    if (pad?.buttons.some((b) => b.pressed)) Module.playerTouched = true;
+                }
+            } catch (e) {}
+        }, 250);
+
+        function ps2AppleWebKit() {
+            return /^Apple/.test(navigator.vendor || '');
+        }
+
+        function ps2EngineDir(dir) {
+            var ok = function (body) {
+                try {
+                    var h = [0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 3, 2, 1, 0, 10];
+                    return WebAssembly.validate(new Uint8Array(h.concat([body.length + 2, 1, body.length], body)));
+                } catch (e) {
+                    return false;
+                }
+            };
+            return !ps2AppleWebKit() && ok([0, 0x12, 0, 0x0B]) && ok([0, 0x1F, 0x40, 0, 0x0B, 0x0B])
+                ? dir
+                : dir.replace('/nojspi-runtime', '/legacy-runtime');
+        }
+
+        function ps2PrepareWebGpu(jspi, start) {
+            var noGpu = false;
+            var started = performance.now();
+            try {
+                noGpu = /[?&]gpu=0(&|$)/.test(parent.location.search) || sessionStorage.getItem('ps2NoGpu') === '1';
+            } catch (e) {}
+            if (jspi || !navigator.gpu || noGpu) {
+                start();
+                return;
+            }
+            var fallBack = function (why) {
+                console.error('[gpu] ' + why);
+                if (performance.now() - started > 60000) return;
+                try {
+                    if (sessionStorage.getItem('ps2NoGpu') === '1') return;
+                    sessionStorage.setItem('ps2NoGpu', '1');
+                } catch (e) {
+                    return;
+                }
+                location.reload();
+            };
+            navigator.gpu.requestAdapter({ powerPreference: 'high-performance' }).then(function (adapter) {
+                if (!adapter) return;
+                return adapter.requestDevice({
+                    requiredFeatures: adapter.features.has('timestamp-query') ? ['timestamp-query'] : [],
+                    requiredLimits: {
+                        maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+                        maxBufferSize: adapter.limits.maxBufferSize
+                    }
+                }).then(function (device) {
+                    device.addEventListener('uncapturederror', function (e) { fallBack('error: ' + e.error.message); });
+                    device.lost.then(function (info) { if (info.reason !== 'destroyed') fallBack('device lost: ' + info.message); });
+                    Module.preinitializedWebGPUAdapter = adapter;
+                    Module.preinitializedWebGPUDevice = device;
+                });
+            }).catch(function (e) {
+                console.warn('[web] WebGPU unavailable without JSPI: ' + e);
+            }).then(start);
+        }
+
+        let bootTriggered = false;
+        splashScreen.addEventListener('click', function () {
+            if (bootTriggered) return;
+            bootTriggered = true;
+
+            bannerImg.style.display = 'none';
+            splashScreen.style.display = 'none';
+            canvas.style.display = 'block';
+            fitCanvas();
+
+            Module.onInitialized = function () {
+                Module.startGame({ online: false }).catch(function (err) {
+                    console.error('[web] Failed to start Burnout ISO:', err);
+                });
+            };
+
+            var jspi = typeof WebAssembly.Suspending === 'function' && !ps2AppleWebKit();
+            ps2PrepareWebGpu(jspi, function () {
+                var s = document.createElement('script');
+                s.async = true;
+                s.src = jspi ? 'ps2web.js?v=13c8d0c32d3db18b' : ps2EngineDir('/nojspi-runtime/') + 'ps2web.js?v=13c8d0c32d3db18b';
+                document.body.appendChild(s);
+            });
         });
     </script>
+
 </body>
 </html>
