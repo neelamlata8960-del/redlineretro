@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Red Lines Retro</title>
     
+    <link rel="icon" href="./logo.png" type="image/png">
     <link rel="stylesheet" href="./data/emulator.min.css">
     
     <style>
@@ -25,7 +26,7 @@
         }
 
         h1 {
-            color: #7a8288; /* Gunmetal grey */
+            color: #7a8288;
             font-size: 2.5rem;
             font-weight: 900;
             text-transform: uppercase;
@@ -33,6 +34,7 @@
             margin: 0;
             padding-bottom: 8px;
             border-bottom: 4px solid #cc0000;
+            text-align: center;
         }
 
         .cabinet-frame {
@@ -48,6 +50,50 @@
         #emulator-container {
             width: 100%;
             height: 100%;
+            display: none;
+        }
+
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #splash-screen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            body {
+                justify-content: flex-start;
+                padding-top: 5vh;
+            }
+            
+            .header-wrapper {
+                margin-bottom: 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+                white-space: nowrap;
+                border-bottom: 2px solid #cc0000;
+            }
+            
+            .cabinet-frame {
+                width: 95vw;
+                border-width: 4px;
+            }
         }
     </style>
 </head>
@@ -58,18 +104,35 @@
     </div>
 
     <div class="cabinet-frame">
+        <div id="splash-screen">
+            <img src="./banner.png" alt="Click to Start">
+        </div>
         <div id="emulator-container"></div>
     </div>
 
     <script>
-        window.EJS_player = '#emulator-container';
-        window.EJS_core = 'ppsspp';
-        window.EJS_gameUrl = 'https://archive.org/download/burnout-dominator-asia/Burnout%20Dominator%20%28Asia%29.iso';
-        window.EJS_pathtodata = './data/';
-        window.EJS_threads = false;
-        window.EJS_startOnLoaded = true;
+        document.getElementById('splash-screen').addEventListener('click', function() {
+            // Hide the splash screen banner and display the emulator container
+            this.style.display = 'none';
+            document.getElementById('emulator-container').style.display = 'block';
+
+            // Define engine global configuration variables
+            window.EJS_player = '#emulator-container';
+            window.EJS_core = 'ppsspp';
+            window.EJS_gameUrl = 'https://archive.org/download/burnout-dominator-asia/Burnout%20Dominator%20%28Asia%29.iso';
+            window.EJS_pathtodata = './data/';
+            window.EJS_threads = false;
+            window.EJS_startOnLoaded = true;
+            
+            // Ensure built-in virtual touch controls are enabled for mobile devices
+            window.EJS_virtualGamepad = true; 
+
+            // Dynamically inject the emulator engine script to initialize
+            const script = document.createElement('script');
+            script.src = './data/emulator.min.js';
+            document.body.appendChild(script);
+        });
     </script>
-    <script src="./data/emulator.min.js"></script>
 
 </body>
 </html>
