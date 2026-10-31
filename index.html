@@ -26,23 +26,20 @@
 
     <script>
         document.getElementById('banner').addEventListener('click', function() {
-            // 1. Hide the hovercar banner
             this.style.display = 'none';
             
-            // 2. Configure the Engine
             window.EJS_player = '#game-container';
             window.EJS_core = 'psp';
             window.EJS_gameName = 'Burnout';
             window.EJS_color = '#d32f2f';
             window.EJS_startOnLoaded = true;
-            window.EJS_pathtodata = 'https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/';
             
-            // IMPORTANT: Paste your actual Archive.org link right between these single quotes!
+            // Fixed: Pointing exclusively to the compiled 'stable' release
+            window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
             window.EJS_gameUrl = 'PASTE_YOUR_ARCHIVE_ORG_LINK_HERE';
 
-            // 3. Ignite the Engine
             var script = document.createElement('script');
-            script.src = 'https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/emulator.min.js';
+            script.src = 'https://cdn.emulatorjs.org/stable/data/emulator.min.js';
             document.body.appendChild(script);
         });
     </script>
