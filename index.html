@@ -345,7 +345,7 @@ registerProcessor('ps2-output', Output);`;
             revision: '13c8d0c32d3db18b',
             locateFile: (path, prefix) => prefix + path + (/\.(wasm|data)$/.test(path) ? '?v=13c8d0c32d3db18b' : ''),
             arguments: [],
-            discUrl: params.get('disc') || BURNOUT_ISO_URL,
+           discUrl: "[https://corsproxy.io/?https://archive.org/download/burnout-dominator-asia/Burnout%20Dominator%20(Asia).iso](https://corsproxy.io/?https://archive.org/download/burnout-dominator-asia/Burnout%20Dominator%20(Asia).iso)",
             discChunkUrl: null,
             discSize: Number(params.get('size')) || 0,
             volume: 0.7,
