@@ -111,38 +111,4 @@
     </div>
 
     <script>
-        document.getElementById('splash-screen').addEventListener('click', function() {
-            // Hide the splash screen banner and display the emulator container
-            this.style.display = 'none';
-            document.getElementById('emulator-container').style.display = 'block';
-
-            // Define engine global configuration variables
-            window.EJS_player = '#emulator-container';
-            window.EJS_core = 'ppsspp';
-            window.EJS_gameUrl = 'https://archive.org/download/burnout-dominator-asia/Burnout%20Dominator%20%28Asia%29.iso';
-            window.EJS_pathtodata = './data/';
-            window.EJS_threads = false;
-            window.EJS_startOnLoaded = true;
-            window.EJS_virtualGamepad = true; 
-
-            // Dynamically inject the emulator engine script
-            const script = document.createElement('script');
-            script.src = './data/emulator.min.js';
-            
-            // Explicitly trigger the initialization sequence once the script has loaded
-            // This bypasses the missed DOMContentLoaded lifecycle event
-            script.onload = function() {
-                if (typeof EmulatorJS !== 'undefined') {
-                    try {
-                        window.EJS_emulator = new EmulatorJS(window.EJS_player, {
-                            core: window.EJS_core,
-                            gameUrl: window.EJS_gameUrl,
-                            pathtodata: window.EJS_pathtodata,
-                            threads: window.EJS_threads,
-                            startOnLoaded: window.EJS_startOnLoaded,
-                            virtualGamepad: window.EJS_virtualGamepad
-                        });
-                    } catch (error) {
-                        try {
-                            // Fallback instantiation for legacy EmulatorJS signatures
-                            window.EJS_emulator = new Emulator
+        document.getElementById('splash-screen').
