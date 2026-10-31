@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Lines Retro</title>
+    
+    <link rel="stylesheet" href="./data/emulator.min.css">
+    
+    <style>
+        body {
+            background-color: #0c0c0c;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+
+        .header-wrapper {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #7a8288; /* Gunmetal grey */
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin: 0;
+            padding-bottom: 8px;
+            border-bottom: 4px solid #cc0000;
+        }
+
+        .cabinet-frame {
+            width: 85vw;
+            max-width: 1280px;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border: 12px solid #222;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.95);
+            position: relative;
+        }
+
+        #emulator-container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-wrapper">
+        <h1>Red Lines Retro</h1>
+    </div>
+
+    <div class="cabinet-frame">
+        <div id="emulator-container"></div>
+    </div>
+
+    <script>
+        window.EJS_player = '#emulator-container';
+        window.EJS_core = 'ppsspp';
+        window.EJS_gameUrl = 'https://archive.org/download/burnout-dominator-asia/Burnout%20Dominator%20%28Asia%29.iso';
+        window.EJS_pathtodata = './data/';
+        window.EJS_threads = false;
+        window.EJS_startOnLoaded = true;
+    </script>
+    <script src="./data/emulator.min.js"></script>
+
+</body>
+</html>
