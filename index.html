@@ -123,16 +123,26 @@
             window.EJS_pathtodata = './data/';
             window.EJS_threads = false;
             window.EJS_startOnLoaded = true;
-            
-            // Ensure built-in virtual touch controls are enabled for mobile devices
             window.EJS_virtualGamepad = true; 
 
-            // Dynamically inject the emulator engine script to initialize
+            // Dynamically inject the emulator engine script
             const script = document.createElement('script');
             script.src = './data/emulator.min.js';
-            document.body.appendChild(script);
-        });
-    </script>
-
-</body>
-</html>
+            
+            // Explicitly trigger the initialization sequence once the script has loaded
+            // This bypasses the missed DOMContentLoaded lifecycle event
+            script.onload = function() {
+                if (typeof EmulatorJS !== 'undefined') {
+                    try {
+                        window.EJS_emulator = new EmulatorJS(window.EJS_player, {
+                            core: window.EJS_core,
+                            gameUrl: window.EJS_gameUrl,
+                            pathtodata: window.EJS_pathtodata,
+                            threads: window.EJS_threads,
+                            startOnLoaded: window.EJS_startOnLoaded,
+                            virtualGamepad: window.EJS_virtualGamepad
+                        });
+                    } catch (error) {
+                        try {
+                            // Fallback instantiation for legacy EmulatorJS signatures
+                            window.EJS_emulator = new Emulator
