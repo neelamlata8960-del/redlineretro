@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Red Lines Retro</title>
     <link rel="icon" href="./logo.png" type="image/png">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@latest/data/emulator.min.css">
+    <link rel="stylesheet" href="https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/emulator.min.css">
     <style>
         body {
             background-color: #0c0c0c;
@@ -45,7 +45,7 @@
             position: relative;
         }
 
-        #emulator-container {
+        #game-container {
             width: 100%;
             height: 100%;
             display: none;
@@ -107,15 +107,14 @@
         <div id="splash-screen">
             <img id="banner-img" src="./banner.png" alt="Click to Start">
         </div>
-        <div id="emulator-container"></div>
+        <div id="game-container"></div>
     </div>
 
     <script>
         (function() {
             const splashScreen = document.getElementById('splash-screen');
             const bannerImg = document.getElementById('banner-img');
-            const emulatorContainer = document.getElementById('emulator-container');
-            const cdnDataPath = 'https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@latest/data/';
+            const gameContainer = document.getElementById('game-container');
             let isInitialized = false;
 
             splashScreen.addEventListener('click', function() {
@@ -126,20 +125,19 @@
 
                 bannerImg.style.display = 'none';
                 splashScreen.style.display = 'none';
-                emulatorContainer.style.display = 'block';
+                gameContainer.style.display = 'block';
 
-                window.EJS_player = '#emulator-container';
-                window.EJS_core = 'ppsspp';
-                window.EJS_gameUrl = 'https://archive.org/download/burnout-dominator-asia/Burnout%20Dominator%20%28Asia%29.iso';
-                window.EJS_pathtodata = cdnDataPath;
-                window.EJS_threads = false;
+                window.EJS_player = '#game-container';
+                window.EJS_core = 'psp';
+                window.EJS_gameName = 'Burnout';
+                window.EJS_color = '#d32f2f';
                 window.EJS_startOnLoaded = true;
-                window.EJS_virtualGamepad = true;
+                window.EJS_pathtodata = 'https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/';
+                window.EJS_gameUrl = 'PASTE_YOUR_ARCHIVE_ORG_LINK_HERE';
 
-                const loaderScript = document.createElement('script');
-                loaderScript.type = 'text/javascript';
-                loaderScript.src = cdnDataPath + 'loader.js';
-                document.body.appendChild(loaderScript);
+                const script = document.createElement('script');
+                script.src = 'https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/emulator.min.js';
+                document.body.appendChild(script);
             });
         })();
     </script>
